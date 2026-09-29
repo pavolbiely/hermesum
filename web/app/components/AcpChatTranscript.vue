@@ -1,14 +1,8 @@
 <script setup lang="ts">
 import type { ComponentPublicInstance, CSSProperties } from 'vue'
 import type { PlanEntry } from '@agentclientprotocol/sdk'
-import type { PermissionOption, RequestPermissionRequest } from '~/types/acp-api'
 import type { AcpChatMessage, AcpChatPart } from '~/types/acp-chat'
 import type { AcpChatMessageWithActions, MessageAction, MessageMetadataItem } from '~/composables/useAcpMessageActions'
-
-type PendingPermission = {
-  appRequestId: string
-  request: RequestPermissionRequest
-}
 
 type ChatMessageProps = {
   side: 'left' | 'right'
@@ -28,7 +22,6 @@ type Props = {
   initialTranscriptScrollPending: boolean
   hasOlderMessages: boolean
   loadingOlderMessages: boolean
-  pendingPermissions: PendingPermission[]
   planEntries: PlanEntry[]
   chatMessagesStatus: ChatStatus
   chatUserProps: ChatMessageProps
@@ -66,7 +59,6 @@ const editingText = defineModel<string>('editingText', { required: true })
 const emit = defineEmits<{
   scroll: [event: Event]
   loadOlderMessages: []
-  respondToPermission: [appRequestId: string, option?: PermissionOption]
   cancelEditing: []
   saveEdited: [message: AcpChatMessage]
   assistantHover: [messageId: string, hovered: boolean]
@@ -74,12 +66,6 @@ const emit = defineEmits<{
   assistantFocusIn: [messageId: string]
   assistantFocusOut: [event: FocusEvent, messageId: string]
 }>()
-
-function permissionTitle(permission: PendingPermission) {
-  const toolCall = permission.request.toolCall as Record<string, unknown>
-  const value = toolCall.title ?? toolCall.name ?? toolCall.kind ?? toolCall.toolCallId
-  return typeof value === 'string' && value ? value : 'Permission required'
-}
 
 function filePartKey(file: Extract<AcpChatPart, { type: 'file' }>) {
   return file.id ?? `${file.filename}:${file.mediaType}:${file.size ?? ''}`
@@ -134,41 +120,6 @@ function formatFileSize(bytes?: number) {
           Load older messages
         </UButton>
       </div>
-
-      <UCard
-        v-for="permission in pendingPermissions"
-        :key="permission.appRequestId"
-        variant="soft"
-        :ui="{ body: 'space-y-3' }"
-      >
-        <div class="flex items-start justify-between gap-3">
-          <div class="min-w-0">
-            <p class="text-sm font-medium text-highlighted">{{ permissionTitle(permission) }}</p>
-            <p class="text-xs text-muted">Hermes is requesting permission before running this tool.</p>
-          </div>
-          <UBadge color="warning" variant="soft" size="sm">Permission</UBadge>
-        </div>
-        <div class="flex flex-wrap gap-2">
-          <UButton
-            v-for="option in permission.request.options"
-            :key="option.optionId"
-            size="sm"
-            :color="option.kind.startsWith('allow') ? 'primary' : 'neutral'"
-            :variant="option.kind.startsWith('allow') ? 'solid' : 'soft'"
-            @click="emit('respondToPermission', permission.appRequestId, option)"
-          >
-            {{ option.name }}
-          </UButton>
-          <UButton
-            size="sm"
-            color="neutral"
-            variant="ghost"
-            @click="emit('respondToPermission', permission.appRequestId)"
-          >
-            Cancel
-          </UButton>
-        </div>
-      </UCard>
 
       <AcpPlanCard
         v-if="planEntries.length"
