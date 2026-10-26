@@ -368,7 +368,6 @@ async function attachFiles(files: File[]) {
           :initial-transcript-scroll-pending="initialTranscriptScrollPending"
           :has-older-messages="hasOlderMessages"
           :loading-older-messages="loadingOlderMessages"
-          :pending-permissions="pendingPermissions"
           :plan-entries="planEntries"
           :chat-messages-status="chatMessagesStatus"
           :chat-user-props="chatUserProps"
@@ -407,6 +406,11 @@ async function attachFiles(files: File[]) {
           @assistant-pointer-leave="onAssistantMessagePointerLeave"
           @assistant-focus-in="focusedAssistantMessageId = $event"
           @assistant-focus-out="onAssistantMessageFocusOut"
+        />
+
+        <AcpPermissionRequests
+          :permissions="pendingPermissions"
+          @respond-to-permission="respondToPermission"
         />
 
         <div class="shrink-0 bg-default/80 px-4 py-4 backdrop-blur">
